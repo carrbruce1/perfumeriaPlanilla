@@ -2,228 +2,205 @@ let carrito = [];
 let categoriaActiva = "Todo";
 
 document.addEventListener("DOMContentLoaded", () => {
-  renderCategorias();
-  renderProductos();
-  renderZonas();
-  renderPagos();
-  actualizarTemporizador(); // Inicia el reloj de cuotas/envío
-  document.getElementById("buscador").addEventListener("input", buscar);
+    renderCategorias();
+    renderProductos();
+    renderZonas();
+    renderPagos();
+    // Iniciamos el temporizador de la promo
+    if (typeof actualizarTemporizador === 'function') {
+        setInterval(actualizarTemporizador, 1000);
+    }
+    document.getElementById("buscador").addEventListener("input", buscar);
 });
 
-// ── CATEGORIAS (Misma lógica, estética minimalista) ──
+// ── CATEGORÍAS (Estilo minimalista con barra inferior) ──
 function renderCategorias() {
-  const cont = document.getElementById("categorias");
-  if(!cont) return;
-  cont.innerHTML = "";
-  const todas = [{ id: "Todo", nombre: "Todo" }, ...CONFIG.categorias];
-  todas.forEach(cat => {
-    const activa = cat.id === categoriaActiva ? "bg-acento text-primario" : "border border-white/10 text-white/60";
-    cont.innerHTML += `
-      <button onclick="filtrar('${cat.id}')" 
-              class="flex-shrink-0 px-6 py-2 text-[10px] uppercase tracking-widest transition-all ${activa}">
-        ${cat.nombre}
-      </button>`;
-  });
+    const cont = document.getElementById("categorias");
+    if (!cont) return;
+    cont.innerHTML = "";
+    const todas = [{ id: "Todo", nombre: "Todos" }, ...CONFIG.categorias];
+    
+    todas.forEach(cat => {
+        const esActiva = cat.id === categoriaActiva;
+        const btn = document.createElement("button");
+        btn.onclick = () => filtrar(cat.id);
+        btn.className = `flex-shrink-0 pb-2 px-2 text-[11px] uppercase tracking-[2px] transition-all duration-300 border-b-2 ${
+            esActiva ? "border-acento text-white font-bold" : "border-transparent text-white/40"
+        }`;
+        btn.innerText = cat.nombre;
+        cont.appendChild(btn);
+    });
 }
 
 function filtrar(id) {
-  categoriaActiva = id;
-  renderCategorias();
-  renderProductos();
+    categoriaActiva = id;
+    renderCategorias();
+    renderProductos();
 }
 
-// ── PRODUCTOS (Diseño Premium) ──
+// ── PRODUCTOS (Card estilo Boutique) ──
 function renderProductos() {
-  const cont = document.getElementById("productos");
-  if(!cont) return;
-  cont.innerHTML = "";
-  
-  const textoBusqueda = document.getElementById("buscador").value.trim().toLowerCase();
-  let filtrados = CONFIG.productos;
+    const cont = document.getElementById("productos");
+    if (!cont) return;
+    cont.innerHTML = "";
 
-  if (textoBusqueda !== "") {
-    filtrados = CONFIG.productos.filter(p => 
-      p.nombre.toLowerCase().includes(textoBusqueda) || 
-      p.descripcion.toLowerCase().includes(textoBusqueda)
-    );
-  } else if (categoriaActiva !== "Todo") {
-    filtrados = CONFIG.productos.filter(p => p.categoria === categoriaActiva);
-  }
+    const textoBusqueda = document.getElementById("buscador").value.trim().toLowerCase();
+    let filtrados = CONFIG.productos;
 
-  if(filtrados.length === 0) {
-    cont.innerHTML = `<p class="text-center text-white/20 py-10 uppercase tracking-widest text-xs">No se encontraron fragancias</p>`;
-    return;
-  }
+    if (textoBusqueda !== "") {
+        filtrados = CONFIG.productos.filter(p => 
+            p.nombre.toLowerCase().includes(textoBusqueda) || 
+            p.categoria.toLowerCase().includes(textoBusqueda)
+        );
+    } else if (categoriaActiva !== "Todo") {
+        filtrados = CONFIG.productos.filter(p => p.categoria === categoriaActiva);
+    }
 
-  // Grid de productos
-  const grid = document.createElement("div");
-  grid.className = "grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4";
-  
-  filtrados.forEach(p => {
-    grid.innerHTML += `
-      <div class="group relative bg-white/5 border border-white/5 p-4 transition-all hover:border-acento/30">
-        <div class="aspect-[3/4] mb-4 overflow-hidden bg-[#111]">
-          <img src="${p.img}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
-        </div>
-        <div class="text-center">
-          <h3 class="font-playfair text-sm tracking-wide h-10 overflow-hidden">${p.nombre}</h3>
-          <p class="text-[9px] text-white/30 uppercase mt-1 mb-3 tracking-tighter">${p.descripcion}</p>
-          <div class="text-acento font-bold text-sm mb-4">$${p.precio.toLocaleString()}</div>
-          <button onclick="abrirOpciones(${p.id})" 
-                  class="w-full border border-acento/50 text-acento py-2 text-[10px] uppercase tracking-widest hover:bg-acento hover:text-primario transition-all">
-            Ver más
-          </button>
-        </div>
-      </div>`;
-  });
-  cont.appendChild(grid);
+    // Contenedor de grilla profesional (2 columnas en móvil, 4 en desktop)
+    const grid = document.createElement("div");
+    grid.className = "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-10 gap-x-4";
+
+    filtrados.forEach(p => {
+        grid.innerHTML += `
+            <div class="group cursor-pointer" onclick="abrirOpciones(${p.id})">
+                <div class="relative overflow-hidden bg-[#111] aspect-[3/4] mb-4 border border-white/5 transition-all group-hover:border-acento/30">
+                    <img src="${p.img}" alt="${p.nombre}" 
+                         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                    
+                    <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2 py-1 text-[8px] uppercase tracking-widest text-acento">
+                        ${p.categoria}
+                    </div>
+                    
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span class="border border-white px-4 py-2 text-[10px] uppercase tracking-widest">Descubrir</span>
+                    </div>
+                </div>
+                
+                <div class="text-center px-2">
+                    <h3 class="font-playfair text-sm text-white/90 leading-tight mb-1 group-hover:text-acento transition-colors">${p.nombre}</h3>
+                    <p class="text-[10px] text-white/30 uppercase tracking-tighter mb-2 line-clamp-1">${p.descripcion}</p>
+                    <div class="text-acento font-light tracking-widest text-sm">$${p.precio.toLocaleString()}</div>
+                </div>
+            </div>`;
+    });
+    cont.appendChild(grid);
 }
 
-// ── LÓGICA DE MODAL DE OPCIONES (Ej: Tamaños de perfume) ──
+// ── LÓGICA DE SELECCIÓN DE TAMAÑO (Modal refinado) ──
 function abrirOpciones(id) {
-  const producto = CONFIG.productos.find(p => p.id === id);
-  if(!producto) return;
+    const producto = CONFIG.productos.find(p => p.id === id);
+    if (!producto) return;
 
-  document.getElementById("modalTitulo").innerText = producto.nombre;
-  const contenedor = document.getElementById("contenedorOpciones");
-  contenedor.innerHTML = "";
+    document.getElementById("modalTitulo").innerText = producto.nombre;
+    const contenedor = document.getElementById("contenedorOpciones");
+    contenedor.innerHTML = "";
 
-  // Aquí podrías tener tamaños en tu CONFIG, si no, agregamos el estándar
-  const tamaños = [
-    { label: "50ml", precio: producto.precio },
-    { label: "100ml", precio: producto.precio * 1.6 } // Ejemplo de incremento
-  ];
+    // Tamaños típicos de perfumería
+    const presentaciones = [
+        { ml: "50ml", factor: 1 },
+        { ml: "100ml", factor: 1.6 }
+    ];
 
-  tamaños.forEach(t => {
-    contenedor.innerHTML += `
-      <button onclick="agregarAlCarrito('${producto.nombre}', '${t.label}', ${t.precio})" 
-              class="flex justify-between items-center bg-white/5 border border-white/10 px-4 py-3 hover:border-acento/50 transition-all">
-        <span class="text-xs text-white/80 uppercase">${t.label}</span>
-        <span class="text-acento font-bold">$${t.precio.toLocaleString()}</span>
-      </button>`;
-  });
+    presentaciones.forEach(pres => {
+        const precioFinal = Math.round(producto.precio * pres.factor);
+        contenedor.innerHTML += `
+            <button onclick="agregarAlCarrito('${producto.nombre}', '${pres.ml}', ${precioFinal})" 
+                    class="group flex justify-between items-center w-full border border-white/10 p-4 hover:border-acento transition-all">
+                <div class="text-left">
+                    <div class="text-[10px] text-white/40 uppercase tracking-widest">Tamaño</div>
+                    <div class="text-sm text-white group-hover:text-acento">${pres.ml}</div>
+                </div>
+                <div class="text-acento font-bold">$${precioFinal.toLocaleString()}</div>
+            </button>`;
+    });
 
-  document.getElementById("modalOpciones").classList.remove("hidden");
+    document.getElementById("modalOpciones").classList.remove("hidden");
 }
 
-function cerrarModalOpciones() {
-  document.getElementById("modalOpciones").classList.add("hidden");
-}
-
-// ── CARRITO ──
+// ── EL RESTO DE LAS FUNCIONES SE MANTIENEN IGUAL (Carrito, Enviar, etc.) ──
 function agregarAlCarrito(nombre, detalle, precio) {
-  carrito.push({ item: `${nombre} (${detalle})`, precio: precio });
-  actualizarContador();
-  cerrarModalOpciones();
+    carrito.push({ item: nombre, detalle: detalle, precio: precio });
+    actualizarContador();
+    cerrarModalOpciones();
 }
 
 function actualizarContador() {
-  document.getElementById("contador").innerText = carrito.length;
+    const count = document.getElementById("contador");
+    if(count) count.innerText = carrito.length;
 }
 
 function abrirCarrito() {
-  const lista = document.getElementById("listaCarrito");
-  const totalDoc = document.getElementById("totalCarrito");
-  if(!lista) return;
-  
-  lista.innerHTML = "";
-  let total = 0;
-  
-  carrito.forEach((p, i) => {
-    total += p.precio;
-    lista.innerHTML += `
-      <div class="flex justify-between items-center py-4 border-b border-white/5">
-        <div>
-          <div class="text-white text-xs uppercase tracking-wider">${p.item}</div>
-          <div class="text-acento text-[10px] mt-1">$${p.precio.toLocaleString()}</div>
-        </div>
-        <button onclick="eliminarItem(${i})" class="text-white/20 hover:text-red-400">✕</button>
-      </div>`;
-  });
-  
-  totalDoc.innerText = "$" + total.toLocaleString();
-  document.getElementById("modalCarrito").classList.remove("hidden");
-}
-
-function cerrarCarrito() {
-  document.getElementById("modalCarrito").classList.add("hidden");
+    const lista = document.getElementById("listaCarrito");
+    const totalDoc = document.getElementById("totalCarrito");
+    lista.innerHTML = "";
+    let total = 0;
+    
+    carrito.forEach((p, i) => {
+        total += p.precio;
+        lista.innerHTML += `
+            <div class="flex justify-between items-center py-5 border-b border-white/5">
+                <div class="flex-1">
+                    <div class="text-[11px] text-acento uppercase tracking-widest mb-1">${p.item}</div>
+                    <div class="text-[10px] text-white/40 uppercase">${p.detalle}</div>
+                    <div class="text-sm mt-1">$${p.precio.toLocaleString()}</div>
+                </div>
+                <button onclick="eliminarItem(${i})" class="text-white/20 hover:text-white transition-colors">✕</button>
+            </div>`;
+    });
+    totalDoc.innerText = "$" + total.toLocaleString();
+    document.getElementById("modalCarrito").classList.remove("hidden");
 }
 
 function eliminarItem(i) {
-  carrito.splice(i, 1);
-  actualizarContador();
-  if (carrito.length === 0) cerrarCarrito();
-  else abrirCarrito();
+    carrito.splice(i, 1);
+    actualizarContador();
+    if (carrito.length === 0) cerrarCarrito(); else abrirCarrito();
 }
 
-// ── FORMULARIO Y ENVÍO ──
-function cerrarCarritoYFormulario() {
-  cerrarCarrito();
-  document.getElementById("modal").classList.remove("hidden");
-}
+function cerrarModalOpciones() { document.getElementById("modalOpciones").classList.add("hidden"); }
+function cerrarCarrito() { document.getElementById("modalCarrito").classList.add("hidden"); }
+function cerrarCarritoYFormulario() { cerrarCarrito(); document.getElementById("modal").classList.remove("hidden"); }
+function buscar() { renderProductos(); }
 
 function renderZonas() {
-  const select = document.getElementById("zona");
-  if(!select) return;
-  select.innerHTML = "";
-  CONFIG.zonas.forEach(z => {
-    select.innerHTML += `<option value="${z.costo}" class="bg-primario text-white">${z.nombre} ($${z.costo.toLocaleString()})</option>`;
-  });
+    const select = document.getElementById("zona");
+    if(!select) return;
+    CONFIG.zonas.forEach(z => {
+        select.innerHTML += `<option value="${z.costo}" class="bg-black text-white">${z.nombre} ($${z.costo.toLocaleString()})</option>`;
+    });
 }
 
 function renderPagos() {
-  const cont = document.getElementById("listaPagos");
-  if(!cont) return;
-  cont.innerHTML = `
-    <label class="flex items-center gap-3 cursor-pointer text-xs text-white/60">
-      <input type="radio" name="pago" value="Efectivo" checked class="accent-acento"> Efectivo / Boutique
-    </label>
-    <label class="flex items-center gap-3 cursor-pointer text-xs text-white/60 mt-2">
-      <input type="radio" name="pago" value="Transferencia" class="accent-acento"> Transferencia Bancaria
-    </label>`;
+    const cont = document.getElementById("listaPagos");
+    cont.innerHTML = `
+        <label class="flex items-center gap-3 cursor-pointer py-2 group">
+            <input type="radio" name="pago" value="Efectivo" checked class="accent-acento"> 
+            <span class="text-[11px] uppercase tracking-widest text-white/60 group-hover:text-white">Efectivo / Boutique</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer py-2 group">
+            <input type="radio" name="pago" value="Transferencia" class="accent-acento"> 
+            <span class="text-[11px] uppercase tracking-widest text-white/60 group-hover:text-white">Transferencia / Alias</span>
+        </label>`;
 }
 
 function enviarPedido() {
-  const n = document.getElementById("nombre").value.trim();
-  const d = document.getElementById("direccion").value.trim();
-  const t = document.getElementById("tipo").value;
-  const p = document.querySelector('input[name="pago"]:checked')?.value;
-  
-  if (!n) { alert("Por favor, ingresá tu nombre."); return; }
-  
-  let sub = 0; 
-  carrito.forEach(x => sub += x.precio);
-  
-  let mensaje = `*Essence Deluxe - Nuevo Pedido*%0A━━━━━━━━━━━━━━━%0A👤 *Cliente:* ${n}%0A📦 *Método:* ${t}%0A💳 *Pago:* ${p}%0A`;
-  if(t === "Delivery") mensaje += `📍 *Dirección:* ${d}%0A`;
-  
-  mensaje += `%0A✨ *Fragancias:*%0A`;
-  carrito.forEach(x => { mensaje += `• ${x.item}%0A`; });
-  mensaje += `%0A💰 *Total: $${sub.toLocaleString()}*`;
-  
-  window.open(`https://wa.me/${CONFIG.telefono}?text=${mensaje}`);
+    const n = document.getElementById("nombre").value.trim();
+    const t = document.getElementById("tipo").value;
+    const p = document.querySelector('input[name="pago"]:checked')?.value;
+    if (!n) return alert("Ingresá tu nombre");
+    
+    let total = 0;
+    let itemsTxt = "";
+    carrito.forEach(x => {
+        total += x.precio;
+        itemsTxt += `• ${x.item} (${x.detalle})%0A`;
+    });
+
+    let mensaje = `*Essence Deluxe - Pedido*%0A━━━━━━━━━━━━━━━%0A👤 *Cliente:* ${n}%0A📦 *Entrega:* ${t}%0A💳 *Pago:* ${p}%0A%0A✨ *Fragancias:*%0A${itemsTxt}%0A💰 *Total: $${total.toLocaleString()}*`;
+    window.open(`https://wa.me/${CONFIG.telefono}?text=${mensaje}`);
 }
 
-// ── TEMPORIZADOR (Versión 3 Cuotas / Envío Gratis) ──
-function actualizarTemporizador() {
-  const timerDoc = document.getElementById("timer");
-  if(!timerDoc) return;
-  
-  const ahora = new Date();
-  const finDeDia = new Date();
-  finDeDia.setHours(23, 59, 59, 0);
-  
-  const diff = finDeDia - ahora;
-  const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-  const m = Math.floor((diff / (1000 * 60)) % 60);
-  const s = Math.floor((diff / 1000) % 60);
-  
-  timerDoc.innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-}
-setInterval(actualizarTemporizador, 1000);
-
-function buscar() { renderProductos(); }
 function toggleDelivery() {
-  const t = document.getElementById("tipo").value;
-  document.getElementById("seccionDelivery").classList.toggle("hidden", t !== "Delivery");
+    const t = document.getElementById("tipo").value;
+    document.getElementById("seccionDelivery").classList.toggle("hidden", t !== "Delivery");
 }
